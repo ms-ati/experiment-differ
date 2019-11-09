@@ -1,3 +1,8 @@
 # Example configuration file for a run of differ
-left: "/Users/msiegel/Documents/workspace/Panorama/nds/sample/data/capitol_view_es-des_moines_icsd-ia/2019-2020/20191107T192312Z_section.tier1/section.jsonl"
-right: example.yml
+left:
+  path: "example_left.jsonl"
+  primary_key:
+    - "-RefId"
+    - "-SchoolYear"
+right:
+  path: "example_right.jsonl"

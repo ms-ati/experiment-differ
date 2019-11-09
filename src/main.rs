@@ -5,7 +5,6 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
-use std::rc::Rc;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct InputConfig {
@@ -34,18 +33,28 @@ fn main() -> Result<(), Box<dyn Error>> {
         map(|s| jmespath::compile(s.as_str()).unwrap()).
         collect::<Vec<jmespath::Expression>>();
 
-    // Parse primary keys from some jsonl values
+    // Lazily parse jsonl values
     let jsonl_iter =
         Deserializer::from_reader(File::open(cfg_left.path)?).
         into_iter::<Value>().
         map(Result::unwrap);  // FIX: panics on failed parse
 
-    for json in jsonl_iter.take(5000) {
-        let pk_vals = jmespath_pks.
+    // Lazily extract their joined primary key
+    let extract_pk = |json: &Value| -> String {
+        jmespath_pks.
             iter().
-            map(|pk| pk.search(jmespath::Variable::from(&json)).unwrap()).
-            collect::<Vec<Rc<jmespath::Variable>>>();
-        println!("{:?}", pk_vals)
+            map(|pk| pk.search(jmespath::Variable::from(json)).unwrap()).
+            map(|rcv| rcv.as_string().unwrap().to_owned()).
+            collect::<Vec<String>>().
+            join("|")
+    };
+
+    let jsonl_pks_iter =
+        jsonl_iter.map(|json: Value| (extract_pk(&json), json));
+
+    for (pk, json) in jsonl_pks_iter {
+        println!("{}", pk);
+        println!("{}", json);
     }
 
     Ok(())

@@ -54,6 +54,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let jsonl_pks_iter =
         jsonl_iter.map(|json: Value| (extract_pk(&json), json));
 
+    let write_to_stdout = true;
+    let write_to_lmdb = false;
+
     // First determine the path to the environment, which is represented
     // on disk as a directory containing two files:
     //
@@ -86,7 +89,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Putting data returns a `Result<(), StoreError>`, where StoreError
     // is an enum identifying the reason for a failure.
     for (pk, json) in jsonl_pks_iter {
-        store.put(&mut writer, pk, &rkv::Value::Blob(json.to_string().as_bytes())).unwrap();
+        if write_to_stdout {
+            println!("{}", pk);
+            println!("{}", json);
+        }
+
+        if write_to_lmdb {
+            store.put(&mut writer, pk, &rkv::Value::Blob(json.to_string().as_bytes())).unwrap();
+        }
     }
 
     // You must commit a write transaction before the writer goes out

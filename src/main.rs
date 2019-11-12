@@ -3,11 +3,12 @@ use serde::{Serialize, Deserialize};
 use serde_json::{Deserializer, Value};
 use std::default::Default;
 use std::error::Error;
-use std::io::BufReader;
+//use std::io::BufReader;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
 use tempfile::Builder;
+use std::ops::Deref;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct InputConfig {
@@ -37,8 +38,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         collect::<Vec<jmespath::Expression>>();
 
     // Lazily parse jsonl values
+    let file = File::open(cfg_left.path)?;
+    let mmap = unsafe { memmap::Mmap::map(&file) }?;
     let jsonl_iter =
-        Deserializer::from_reader(BufReader::new(File::open(cfg_left.path)?)).
+        //Deserializer::from_reader(BufReader::new(file)).
+        Deserializer::from_slice(mmap.deref()).
         into_iter::<Value>().
         map(Result::unwrap);  // FIX: panics on failed parse
 

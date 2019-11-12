@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 jmespath = "~0.2.0"
 rkv = "~0.10.2"
+memmap = "~0.7.0"
 serde = { version = "~1.0", features = ["derive"] }
 serde_json = "~1.0.41"
 serde_yaml = "~0.8.11"

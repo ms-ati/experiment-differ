@@ -3,6 +3,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::{Deserializer, Value};
 use std::default::Default;
 use std::error::Error;
+use std::io::BufReader;
 use std::fs;
 use std::fs::File;
 use std::path::PathBuf;
@@ -37,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Lazily parse jsonl values
     let jsonl_iter =
-        Deserializer::from_reader(File::open(cfg_left.path)?).
+        Deserializer::from_reader(BufReader::new(File::open(cfg_left.path)?)).
         into_iter::<Value>().
         map(Result::unwrap);  // FIX: panics on failed parse
 

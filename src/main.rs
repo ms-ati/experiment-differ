@@ -110,8 +110,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // is an enum identifying the reason for a failure.
     for (pk, json) in jsonl_pks_iter {
         if write_to_stdout {
-            writeln!(lock, "{}", pk);
-            writeln!(lock, "{}", json);
+            writeln!(lock, "{}", pk)?;
+            writeln!(lock, "{}", json)?;
         }
 
         if write_to_lmdb {

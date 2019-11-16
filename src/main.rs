@@ -100,34 +100,33 @@ fn main() -> Result<(), Box<dyn Error>> {
     // a second one will block until the first completes.
     let mut writer = env.write().unwrap();
 
-    {
-        // take stdout lock, see: https://llogiq.github.io/2017/06/01/perf-pitfalls.html
-        let out = io::stdout();
-        let mut lock = out.lock();
+    // take stdout lock, see: https://llogiq.github.io/2017/06/01/perf-pitfalls.html
+    let out = io::stdout();
+    let mut lock = out.lock();
 
-        // Keys are `AsRef<[u8]>`, while values are `Value` enum instances.
-        // Use the `Blob` variant to store arbitrary collections of bytes.
-        // Putting data returns a `Result<(), StoreError>`, where StoreError
-        // is an enum identifying the reason for a failure.
-        for (pk, json) in jsonl_pks_iter {
-            if write_to_stdout {
-                writeln!(lock, "{}", pk);
-                writeln!(lock, "{}", json);
-            }
-
-            if write_to_lmdb {
-                store
-                    .put(
-                        &mut writer,
-                        pk,
-                        &rkv::Value::Blob(json.to_string().as_bytes()),
-                    )
-                    .unwrap();
-            }
+    // Keys are `AsRef<[u8]>`, while values are `Value` enum instances.
+    // Use the `Blob` variant to store arbitrary collections of bytes.
+    // Putting data returns a `Result<(), StoreError>`, where StoreError
+    // is an enum identifying the reason for a failure.
+    for (pk, json) in jsonl_pks_iter {
+        if write_to_stdout {
+            writeln!(lock, "{}", pk);
+            writeln!(lock, "{}", json);
         }
 
-        // stdout lock dropped here
+        if write_to_lmdb {
+            store
+                .put(
+                    &mut writer,
+                    pk,
+                    &rkv::Value::Blob(json.to_string().as_bytes()),
+                )
+                .unwrap();
+        }
     }
+
+    // stdout lock dropped here
+    drop(lock);
 
     // You must commit a write transaction before the writer goes out
     // of scope, or the transaction will abort and the data won't persist.

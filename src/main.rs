@@ -1,50 +1,46 @@
 use rkv::{Manager, Rkv, SingleStore, StoreOptions};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::{Deserializer, Value};
 use std::default::Default;
 use std::error::Error;
-//use std::io::BufReader;
 use std::fs;
 use std::fs::File;
+use std::ops::Deref;
 use std::path::PathBuf;
 use tempfile::Builder;
-use std::ops::Deref;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct InputConfig {
     path: PathBuf,
-    primary_key: Option<Vec<String>>
+    primary_key: Option<Vec<String>>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct DifferConfig {
     left: Option<InputConfig>,
-    right: Option<InputConfig>
+    right: Option<InputConfig>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse config from "example.yml"
-    let cfg: DifferConfig =
-        serde_yaml::from_slice(fs::read_to_string("example.yml")?.as_ref())?;
+    let cfg: DifferConfig = serde_yaml::from_slice(fs::read_to_string("example.yml")?.as_ref())?;
     println!("Config read from \"example.yml\":\n    {:?}\n\n", cfg);
 
     // Convert configured primary key paths into JMESPath functions
     let cfg_left = cfg.left.ok_or("Missing left")?;
     let cfg_left_pks = cfg_left.primary_key.ok_or("Missing left primary key")?;
-    let jmespath_pks = cfg_left_pks.
-        iter().
-        map(|s| format!("\"{}\"", s)).                  // quoted to allow -RefId
-        map(|s| jmespath::compile(s.as_str()).unwrap()).
-        collect::<Vec<jmespath::Expression>>();
+    let jmespath_pks = cfg_left_pks
+        .iter()
+        .map(|s| format!("\"{}\"", s)) // quoted to allow -RefId
+        .map(|s| jmespath::compile(s.as_str()).unwrap())
+        .collect::<Vec<jmespath::Expression>>();
 
     // Lazily parse jsonl values
     let file = File::open(cfg_left.path)?;
     let mmap = unsafe { memmap::Mmap::map(&file) }?;
-    let jsonl_iter =
-        //Deserializer::from_reader(BufReader::new(file)).
-        Deserializer::from_slice(mmap.deref()).
-        into_iter::<Value>().
-        map(Result::unwrap);  // FIX: panics on failed parse
+    let jsonl_iter = Deserializer::from_slice(mmap.deref())
+        .into_iter::<Value>()
+        .map(Result::unwrap); // FIX: panics on failed parse
 
     // TODO: fast path for single key lookups, slow path for general JMESPath
     let is_simple_lookup = true;
@@ -52,24 +48,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Lazily extract their joined primary key
     let extract_pk = |json: &Value| -> String {
         if is_simple_lookup {
-            cfg_left_pks.
-                iter().
-                map(|pk| json[pk].as_str().unwrap()).
-                collect::<Vec<&str>>().
-                join("|")
-        }
-        else {
-            jmespath_pks.
-                iter().
-                map(|pk| pk.search(jmespath::Variable::from(json)).unwrap()).
-                map(|rcv| rcv.as_string().unwrap().to_owned()).
-                collect::<Vec<String>>().
-                join("|")
+            cfg_left_pks
+                .iter()
+                .map(|pk| json[pk].as_str().unwrap())
+                .collect::<Vec<&str>>()
+                .join("|")
+        } else {
+            jmespath_pks
+                .iter()
+                .map(|pk| pk.search(jmespath::Variable::from(json)).unwrap())
+                .map(|rcv| rcv.as_string().unwrap().to_owned())
+                .collect::<Vec<String>>()
+                .join("|")
         }
     };
 
-    let jsonl_pks_iter =
-        jsonl_iter.map(|json: Value| (extract_pk(&json), json));
+    let jsonl_pks_iter = jsonl_iter.map(|json: Value| (extract_pk(&json), json));
 
     let write_to_stdout = true;
     let write_to_lmdb = false;
@@ -90,7 +84,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     // at most once by caching a handle to each environment that it opens.
     // Use it to retrieve the handle to an opened environment—or create one
     // if it hasn't already been opened:
-    let created_arc = Manager::singleton().write().unwrap().get_or_create(path, Rkv::new).unwrap();
+    let created_arc = Manager::singleton()
+        .write()
+        .unwrap()
+        .get_or_create(path, Rkv::new)
+        .unwrap();
     let env = created_arc.read().unwrap();
 
     // Then you can use the environment handle to get a handle to a datastore:
@@ -112,7 +110,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         if write_to_lmdb {
-            store.put(&mut writer, pk, &rkv::Value::Blob(json.to_string().as_bytes())).unwrap();
+            store
+                .put(
+                    &mut writer,
+                    pk,
+                    &rkv::Value::Blob(json.to_string().as_bytes()),
+                )
+                .unwrap();
         }
     }
 

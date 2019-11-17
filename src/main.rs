@@ -43,27 +43,26 @@ fn main() -> Result<(), Box<dyn Error>> {
         .into_iter::<Value>()
         .map(Result::unwrap); // FIX: panics on failed parse
 
-    // TODO: fast path for single key lookups, slow path for general JMESPath
-    let is_simple_lookup = true;
-
-    // Lazily extract their joined primary key
-    let extract_pk = |json: &Value| -> String {
-        if is_simple_lookup {
-            cfg_left_pks
-                .iter()
-                .map(|pk| json[pk].as_str().unwrap())
-                .collect::<Vec<&str>>()
-                .join("|")
-        } else {
-            jmespath_pks
-                .iter()
-                .map(|pk| pk.search(jmespath::Variable::from(json)).unwrap())
-                .map(|rcv| rcv.as_string().unwrap().to_owned())
-                .collect::<Vec<String>>()
-                .join("|")
-        }
+    // Lazily extract their joined primary key - simple
+    let extract_pk_simple = |json: &Value| -> String {
+        cfg_left_pks
+            .iter()
+            .map(|pk| json[pk].as_str().unwrap())
+            .collect::<Vec<&str>>()
+            .join("|")
     };
 
+    // Lazily extract their joined primary key - JMESPath
+    let extract_pk_jmespath = |json: &Value| -> String {
+        jmespath_pks
+            .iter()
+            .map(|pk| pk.search(jmespath::Variable::from(json)).unwrap())
+            .map(|rcv| rcv.as_string().unwrap().to_owned())
+            .collect::<Vec<String>>()
+            .join("|")
+    };
+
+    let extract_pk = extract_pk_simple;
     let jsonl_pks_iter = jsonl_iter.map(|json: Value| (extract_pk(&json), json));
 
     let write_to_stdout = true;

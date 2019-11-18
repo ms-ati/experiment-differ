@@ -68,8 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let jsonl_pks_iter = jsonl_iter.map(|json: Value| (extract_pk(&json), json));
 
-    let write_to_stdout = true;
-    let write_to_lmdb = false;
+    let write_to_stdout = false;
+    let write_to_lmdb = true;
 
     // First determine the path to the environment, which is represented
     // on disk as a directory containing two files:
@@ -82,6 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let root = Builder::new().prefix("differ").tempdir().unwrap();
     fs::create_dir_all(root.path()).unwrap();
     let path = root.path();
+    println!("TempDir: {}", root.path().display());
 
     // The Manager enforces that each process opens the same environment
     // at most once by caching a handle to each environment that it opens.
@@ -93,6 +94,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         .get_or_create(path, Rkv::new)
         .unwrap();
     let env = created_arc.read().unwrap();
+
+    // NOTE: Needs to be large enough for full db, but actual map is sparse on
+    // disk and allocated incrementally up to this max size.
+    let lmdb_max_map_size: usize = 1024 * 1024 * 1024;
+    env.set_map_size(lmdb_max_map_size).unwrap();
 
     // Then you can use the environment handle to get a handle to a datastore:
     let store: SingleStore = env.open_single("mydb", StoreOptions::create()).unwrap();
@@ -126,6 +132,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     // You must commit a write transaction before the writer goes out
     // of scope, or the transaction will abort and the data won't persist.
     writer.commit().unwrap();
+
+    // Read back first item
+    let reader = env.read().unwrap();
+    let mut iter = store.iter_start(&reader).unwrap();
+
+    let (pk_slice, maybe_blob) = iter.next().unwrap().unwrap();
+    let pk = std::str::from_utf8(pk_slice)?;
+    let blob_bytes = maybe_blob.unwrap().to_bytes().unwrap();
+    let json_str = std::str::from_utf8(blob_bytes.as_slice())?;
+    println!("{}, {}", pk, json_str);
 
     Ok(())
 }

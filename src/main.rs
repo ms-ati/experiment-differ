@@ -5,7 +5,6 @@ use std::default::Default;
 use std::error::Error;
 use std::fs;
 use std::fs::File;
-use std::io::{self, Write};
 use std::ops::Deref;
 use std::path::PathBuf;
 use tempfile::Builder;
@@ -28,6 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Config read from \"example.yml\":\n    {:?}\n\n", cfg);
 
     // Convert configured primary key paths into JMESPath functions
+    // NOTE: NOT CURRENTLY USED - Could handle more complex json paths
     let cfg_left = cfg.left.ok_or("Missing left")?;
     let cfg_left_pks = cfg_left.primary_key.ok_or("Missing left primary key")?;
     let jmespath_pks = cfg_left_pks
@@ -36,14 +36,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         .map(|s| jmespath::compile(s.as_str()).unwrap())
         .collect::<Vec<jmespath::Expression>>();
 
-    // Lazily parse jsonl values
+    // Lazily parse jsonl values from memory mapped file (fastest way)
     let file = File::open(cfg_left.path)?;
     let mmap = unsafe { memmap::Mmap::map(&file) }?;
     let jsonl_iter = Deserializer::from_slice(mmap.deref())
         .into_iter::<Value>()
         .map(Result::unwrap); // FIX: panics on failed parse
 
-    // Lazily extract their joined primary key - simple
+    // Lazily extract their joined primary key - simple key lookup, not JMESPath
     let extract_pk_simple = |json: &Value| -> String {
         cfg_left_pks
             .iter()
@@ -52,8 +52,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             .join("|")
     };
 
-    // Lazily extract their joined primary key - JMESPath
-    let extract_pk_jmespath = |json: &Value| -> String {
+    // Lazily extract their joined primary key - more complex lookup w/ JMESPath
+    // NOTE: NOT CURRENTLY USED
+    let _extract_pk_jmespath = |json: &Value| -> String {
         jmespath_pks
             .iter()
             .map(|pk| pk.search(jmespath::Variable::from(json)).unwrap())
@@ -62,7 +63,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             .join("|")
     };
 
+    // NOTE: Using only the simple primary key lookup now
     let extract_pk = extract_pk_simple;
+
     let jsonl_pks_iter = jsonl_iter.map(|json: Value| (extract_pk(&json), json));
 
     let write_to_stdout = true;
@@ -99,18 +102,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // a second one will block until the first completes.
     let mut writer = env.write().unwrap();
 
-    // take stdout lock, see: https://llogiq.github.io/2017/06/01/perf-pitfalls.html
-    let out = io::stdout();
-    let mut lock = out.lock();
-
     // Keys are `AsRef<[u8]>`, while values are `Value` enum instances.
     // Use the `Blob` variant to store arbitrary collections of bytes.
     // Putting data returns a `Result<(), StoreError>`, where StoreError
     // is an enum identifying the reason for a failure.
     for (pk, json) in jsonl_pks_iter {
         if write_to_stdout {
-            writeln!(lock, "{}", pk)?;
-            writeln!(lock, "{}", json)?;
+            println!("{}", pk);
+            println!("{}", json);
         }
 
         if write_to_lmdb {
@@ -123,9 +122,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .unwrap();
         }
     }
-
-    // stdout lock dropped here
-    drop(lock);
 
     // You must commit a write transaction before the writer goes out
     // of scope, or the transaction will abort and the data won't persist.

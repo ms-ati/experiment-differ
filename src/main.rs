@@ -34,6 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .iter()
         .map(|s| {
             if s.starts_with("-") {
+                // NOTE: Wrap strings starting with "-" in quotes per JMESPath docs e.g. "-RefId"
                 format!("\"{}\"", s)
             } else {
                 s.to_owned()

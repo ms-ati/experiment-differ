@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .put(
                     &mut writer,
                     pk,
-                    &rkv::Value::Blob(json.to_string().as_bytes()),
+                    &rkv::Value::Json(json.to_string().as_str()),
                 )
                 .unwrap();
         }
@@ -137,11 +137,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let reader = env.read().unwrap();
     let mut iter = store.iter_start(&reader).unwrap();
 
-    let (pk_slice, maybe_blob) = iter.next().unwrap().unwrap();
+    let (pk_slice, maybe_json) = iter.next().unwrap().unwrap();
     let pk = std::str::from_utf8(pk_slice)?;
-    let blob_bytes = maybe_blob.unwrap().to_bytes().unwrap();
-    let json_str = std::str::from_utf8(blob_bytes.as_slice())?;
+    let json_str = match maybe_json {
+        Some(rkv::Value::Json(s)) => s,
+        _ => "darn it!",
+    };
     println!("{}, {}", pk, json_str);
+
+    let (last_pk_slice, last_maybe_json) = iter.last().unwrap().unwrap();
+    let last_pk = std::str::from_utf8(last_pk_slice)?;
+    let last_json_str = match last_maybe_json {
+        Some(rkv::Value::Json(s)) => s,
+        _ => "darn it!",
+    };
+    println!("{}, {}", last_pk, last_json_str);
 
     Ok(())
 }

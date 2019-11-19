@@ -26,13 +26,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cfg: DifferConfig = serde_yaml::from_slice(fs::read_to_string("example.yml")?.as_ref())?;
     println!("Config read from \"example.yml\":\n    {:?}\n\n", cfg);
 
-    // Convert configured primary key paths into JMESPath functions
-    // NOTE: NOT CURRENTLY USED - Could handle more complex json paths
     let cfg_left = cfg.left.ok_or("Missing left")?;
     let cfg_left_pks = cfg_left.primary_key.ok_or("Missing left primary key")?;
+
+    // Convert configured primary key paths into JMESPath functions
     let jmespath_pks = cfg_left_pks
         .iter()
-        .map(|s| format!("\"{}\"", s)) // quoted to allow -RefId
+        .map(|s| {
+            if s.starts_with("-") {
+                format!("\"{}\"", s)
+            } else {
+                s.to_owned()
+            }
+        })
         .map(|s| jmespath::compile(s.as_str()).unwrap())
         .collect::<Vec<jmespath::Expression>>();
 
@@ -53,18 +59,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     // Lazily extract their joined primary key - more complex lookup w/ JMESPath
-    // NOTE: NOT CURRENTLY USED
-    let _extract_pk_jmespath = |json: &Value| -> String {
+    let extract_pk_jmespath = |json: &Value| -> String {
         jmespath_pks
             .iter()
-            .map(|pk| pk.search(jmespath::Variable::from(json)).unwrap())
-            .map(|rcv| rcv.as_string().unwrap().to_owned())
+            .map(|pk| pk.search(json).expect("Successful JMESPath search result"))
+            .map(|rcv| rcv.as_string().expect("a JSON string").to_owned())
             .collect::<Vec<String>>()
             .join("|")
     };
 
-    // NOTE: Using only the simple primary key lookup now
-    let extract_pk = extract_pk_simple;
+    // Prefer simple lookup unless we see JMESPath-specific characters
+    let use_simple_lookup = cfg_left_pks.iter().all(|s: &String| !s.contains("."));
+
+    let extract_pk: Box<dyn Fn(&Value) -> String> = match use_simple_lookup {
+        true => {
+            println!("Using simple key lookup");
+            Box::new(extract_pk_simple)
+        }
+        _ => {
+            println!("Using JMESPath key lookup");
+            Box::new(extract_pk_jmespath)
+        }
+    };
 
     let jsonl_pks_iter = jsonl_iter.map(|json: Value| (extract_pk(&json), json));
 

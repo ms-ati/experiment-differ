@@ -4,5 +4,7 @@ left:
   primary_key:
     - "-RefId"
     - "-SchoolYear"
+# Uncomment the following to trigger usage of JMESPath lookup
+#    - "LocationOfInstruction.Code"
 right:
   path: "example_right.jsonl"

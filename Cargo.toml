@@ -1,5 +1,5 @@
 [package]
-name = "differ"
+name = "experiment-differ"
 version = "0.1.0"
 authors = ["Marc Siegel <marc@usainnov.com>"]
 edition = "2018"

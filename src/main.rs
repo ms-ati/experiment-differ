@@ -96,7 +96,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // In this example, we use the `tempfile` crate to create the directory.
     //
-    let root = Builder::new().prefix("differ").tempdir().unwrap();
+    let root = Builder::new()
+        .prefix("experiment-differ")
+        .tempdir()
+        .unwrap();
     fs::create_dir_all(root.path()).unwrap();
     let path = root.path();
     println!("TempDir: {}", root.path().display());

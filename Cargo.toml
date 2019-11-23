@@ -14,3 +14,10 @@ serde = { version = "~1.0", features = ["derive"] }
 serde_json = "~1.0.41"
 serde_yaml = "~0.8.11"
 tempfile = "~3.1.0"
+
+[[test]]
+name = "cucumber"
+harness = false # Allows Cucumber to print output instead of libtest
+
+[dev-dependencies]
+cucumber = { package = "cucumber_rust", version = "~0.6.0" }

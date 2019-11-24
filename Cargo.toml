@@ -10,6 +10,8 @@ edition = "2018"
 jmespath = "~0.2.0"
 rkv = "~0.10.2"
 memmap = "~0.7.0"
+once_cell = "~1.2.0"
+once-cell-regex = "~0.1.0"
 serde = { version = "~1.0", features = ["derive"] }
 serde_json = "~1.0.41"
 serde_yaml = "~0.8.11"
@@ -21,3 +23,4 @@ harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
 cucumber = { package = "cucumber_rust", version = "~0.6.0" }
+regex = "~1.3.1"

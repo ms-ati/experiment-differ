@@ -17,9 +17,39 @@ impl std::default::Default for MyWorld {
 
 mod example_steps {
     use cucumber::steps;
+    use once_cell_regex::regex;
+
+    fn extract_quoted_args(matches: &[String]) -> Vec<&str> {
+        let re = regex!(r"`([^`]+)`");
+
+        let caps = matches.iter()
+            .skip(1)
+            .flat_map(|s| re.captures_iter(s))
+            .collect::<Vec<_>>();
+
+        caps.iter()
+            .skip(1)
+            .flat_map(|c| c.iter().skip(1))
+            .flatten()
+            .map(|m| m.as_str())
+            .collect::<Vec<_>>()
+    }
 
     // Any type that implements cucumber::World + Default can be the world
     steps!(crate::MyWorld => {
+        //
+        // Run CLI steps
+        //
+        given "no config file" |_world, _step| {}; // Nothing to do, just documents no config file
+
+        when regex r"^I run the CLI with ((no args)|(`[^`]+`)+)$" |_world, matches, _step| {
+            assert_eq!(extract_quoted_args(matches), Vec::<&str>::new());
+        };
+
+        //
+        // Example steps
+        //
+
         given "I am trying out Cucumber" |world, step| {
             world.foo = "Some string".to_string();
             // Set up your context in given steps

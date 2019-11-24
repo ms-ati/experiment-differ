@@ -1,4 +1,4 @@
-use cucumber::{cucumber, steps, before, after};
+use cucumber::{cucumber, before, after};
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
@@ -6,6 +6,7 @@ pub struct MyWorld {
 }
 
 impl cucumber::World for MyWorld {}
+
 impl std::default::Default for MyWorld {
     fn default() -> MyWorld {
         // This function is called every time a new scenario is started
@@ -18,6 +19,8 @@ impl std::default::Default for MyWorld {
 mod example_steps {
     use cucumber::steps;
     use once_cell_regex::regex;
+    use std::process::Command;
+    use which::which;
 
     fn extract_quoted_args(matches: &[String]) -> Vec<&str> {
         let re = regex!(r"`([^`]+)`");
@@ -35,6 +38,19 @@ mod example_steps {
             .collect::<Vec<_>>()
     }
 
+    fn stdout_of_cargo_run(args: Vec<&str>) -> String {
+        let cargo_path = which("cargo").expect("failed to find `cargo` in path");
+
+        let output = Command::new(cargo_path)
+            .arg("run")
+            .args(args)
+            .output()
+            .expect("failed to execute process `cargo run`");
+
+        String::from_utf8(output.stdout)
+            .expect("invalid utf8 in stdout of `cargo run`")
+    }
+
     // Any type that implements cucumber::World + Default can be the world
     steps!(crate::MyWorld => {
         //
@@ -43,7 +59,8 @@ mod example_steps {
         given "no config file" |_world, _step| {}; // Nothing to do, just documents no config file
 
         when regex r"^I run the CLI with ((no args)|(`[^`]+`)+)$" |_world, matches, _step| {
-            assert_eq!(extract_quoted_args(matches), Vec::<&str>::new());
+            let out = stdout_of_cargo_run(extract_quoted_args(matches));
+            assert_eq!(out, "");
         };
 
         //

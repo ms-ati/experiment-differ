@@ -24,3 +24,4 @@ harness = false # Allows Cucumber to print output instead of libtest
 [dev-dependencies]
 cucumber = { package = "cucumber_rust", version = "~0.6.0" }
 regex = "~1.3.1"
+which = "~3.1.0"

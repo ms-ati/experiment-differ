@@ -1,26 +1,55 @@
 use cucumber::{cucumber, before, after};
+use std::fs::create_dir_all;
+use std::path::PathBuf;
+use std::process::Command;
+use which::which;
 
 pub struct MyWorld {
-    // You can use this struct for mutable context in scenarios.
-    foo: String
+    temp_test_dir: Option<PathBuf>,
+    stdout_of_run: Option<String>,
 }
 
 impl cucumber::World for MyWorld {}
 
 impl std::default::Default for MyWorld {
+    // This function is called every time a new scenario is started
     fn default() -> MyWorld {
-        // This function is called every time a new scenario is started
         MyWorld {
-            foo: "a default string".to_string()
+            temp_test_dir: None,
+            stdout_of_run: None
         }
+    }
+}
+
+impl MyWorld {
+    fn create_temp_test_dir(&mut self) {
+        let path = PathBuf::from("./tmp/test_scenarios");
+        let temp_test_dir = create_dir_all(&path)
+            .expect(format!("failed to create dir '{}'", path.display()).as_str());
+        self.temp_test_dir = Some(path);
+    }
+
+    fn run_and_capture_stdout(&mut self, args: Vec<&str>) {
+        let cargo_path = which("cargo")
+            .expect("failed to find `cargo` in path");
+
+        let output = Command::new(cargo_path)
+            .arg("run")
+            .args(args)
+            .current_dir(self.temp_test_dir.as_ref().unwrap_or(&PathBuf::from(".")))
+            .output()
+            .expect("failed to execute process `cargo run`");
+
+        let stdout = String::from_utf8(output.stdout)
+            .expect("invalid utf8 in stdout of `cargo run`");
+
+        self.stdout_of_run = Some(stdout);
     }
 }
 
 mod example_steps {
     use cucumber::steps;
     use once_cell_regex::regex;
-    use std::process::Command;
-    use which::which;
 
     fn extract_quoted_args(matches: &[String]) -> Vec<&str> {
         let re = regex!(r"`([^`]+)`");
@@ -38,72 +67,17 @@ mod example_steps {
             .collect::<Vec<_>>()
     }
 
-    fn stdout_of_cargo_run(args: Vec<&str>) -> String {
-        let cargo_path = which("cargo").expect("failed to find `cargo` in path");
-
-        let output = Command::new(cargo_path)
-            .arg("run")
-            .args(args)
-            .output()
-            .expect("failed to execute process `cargo run`");
-
-        String::from_utf8(output.stdout)
-            .expect("invalid utf8 in stdout of `cargo run`")
-    }
-
     // Any type that implements cucumber::World + Default can be the world
     steps!(crate::MyWorld => {
         //
         // Run CLI steps
         //
-        given "no config file" |_world, _step| {}; // Nothing to do, just documents no config file
-
-        when regex r"^I run the CLI with ((no args)|(`[^`]+`)+)$" |_world, matches, _step| {
-            let out = stdout_of_cargo_run(extract_quoted_args(matches));
-            assert_eq!(out, "");
+        given "no config file" |world, _step| {
+            world.create_temp_test_dir();
         };
 
-        //
-        // Example steps
-        //
-
-        given "I am trying out Cucumber" |world, step| {
-            world.foo = "Some string".to_string();
-            // Set up your context in given steps
-        };
-
-        when "I consider what I am doing" |world, step| {
-            // Take actions
-            let new_string = format!("{}.", &world.foo);
-            world.foo = new_string;
-        };
-
-        then "I am interested in ATDD" |world, step| {
-            // Check that the outcomes to be observed have occurred
-            assert_eq!(world.foo, "Some string.");
-        };
-
-        then regex r"^we can (.*) rules with regex$" |world, matches, step| {
-            // And access them as an array
-            assert_eq!(matches[1], "implement");
-        };
-
-        then regex r"^we can also match (\d+) (.+) types$" (usize, String) |world, num, word, step| {
-            // `num` will be of type usize, `word` of type String
-            assert_eq!(num, 42);
-            assert_eq!(word, "olika");
-        };
-
-        then "we can use data tables to provide more parameters" |world, step| {
-            let table = step.table().unwrap().clone();
-
-            assert_eq!(table.header, vec!["key", "value"]);
-
-            let expected_keys = table.rows.iter().map(|row| row[0].to_owned()).collect::<Vec<_>>();
-            let expected_values = table.rows.iter().map(|row| row[1].to_owned()).collect::<Vec<_>>();
-
-            assert_eq!(expected_keys, vec!["a", "b"]);
-            assert_eq!(expected_values, vec!["fizz", "buzz"]);
+        when regex r"^I run the CLI with ((no args)|(`[^`]+`)+)$" |world, matches, _step| {
+            world.run_and_capture_stdout(extract_quoted_args(matches));
         };
     });
 }

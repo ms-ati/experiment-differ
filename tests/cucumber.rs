@@ -81,16 +81,10 @@ mod example_steps {
     });
 }
 
-// A setup function to be called before everything else
-fn setup() {}
-
 cucumber! {
     features: "./features", // Path to our feature files
     world: crate::MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
         example_steps::steps // the `steps!` macro creates a `steps` function in a module
-    ],
-    setup: setup, // Optional; called once before everything
-    before: &[],
-    after: &[]
+    ]
 }

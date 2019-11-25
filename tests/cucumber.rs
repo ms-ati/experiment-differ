@@ -7,6 +7,7 @@ use which::which;
 pub struct MyWorld {
     temp_test_dir: Option<PathBuf>,
     stdout_of_run: Option<String>,
+    stderr_of_run: Option<String>,
 }
 
 impl cucumber::World for MyWorld {}
@@ -17,6 +18,7 @@ impl std::default::Default for MyWorld {
         MyWorld {
             temp_test_dir: None,
             stdout_of_run: None,
+            stderr_of_run: None,
         }
     }
 }
@@ -38,15 +40,16 @@ impl MyWorld {
             .output()
             .expect("failed to execute process `cargo run`");
 
-        let stdout =
-            String::from_utf8(output.stdout).expect("invalid utf8 in stdout of `cargo run`");
-
-        self.stdout_of_run = Some(stdout);
+        self.stdout_of_run =
+            Some(String::from_utf8(output.stdout).expect("invalid utf8 in stdout of `cargo run`"));
+        self.stderr_of_run =
+            Some(String::from_utf8(output.stderr).expect("invalid utf8 in stderr of `cargo run`"));
     }
 }
 
 mod example_steps {
     use cucumber::steps;
+    use cucumber::Step;
     use once_cell_regex::regex;
 
     fn extract_quoted_args(matches: &[String]) -> Vec<&str> {
@@ -66,6 +69,11 @@ mod example_steps {
             .collect::<Vec<_>>()
     }
 
+    fn expect_docstring(step: &Step) -> &String {
+        step.docstring()
+            .expect(format!("Step missing docstring: '{:#?}'", step).as_str())
+    }
+
     // Any type that implements cucumber::World + Default can be the world
     steps!(crate::MyWorld => {
         //
@@ -77,6 +85,18 @@ mod example_steps {
 
         when regex r"^I run the CLI with ((no args)|(`[^`]+`)+)$" |world, matches, _step| {
             world.run_and_capture_stdout(extract_quoted_args(matches));
+        };
+
+        then "the stdout should contain:" |world, step| {
+            let stdout = world.stdout_of_run.as_ref().expect("Step missing stdout of run");
+            let expected = expect_docstring(step);
+            assert!(stdout.contains(expected), "stdout: `{:#?}`", stdout);
+        };
+
+        then "the stderr should contain:" |world, step| {
+            let stderr = world.stderr_of_run.as_ref().expect("Step missing stderr of run");
+            let expected = expect_docstring(step);
+            assert!(stderr.contains(expected), "stderr: `{:#?}`", stderr);
         };
     });
 }

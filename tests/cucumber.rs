@@ -1,4 +1,4 @@
-use cucumber::{cucumber, before, after};
+use cucumber::cucumber;
 use std::fs::create_dir_all;
 use std::path::PathBuf;
 use std::process::Command;
@@ -16,7 +16,7 @@ impl std::default::Default for MyWorld {
     fn default() -> MyWorld {
         MyWorld {
             temp_test_dir: None,
-            stdout_of_run: None
+            stdout_of_run: None,
         }
     }
 }
@@ -24,14 +24,12 @@ impl std::default::Default for MyWorld {
 impl MyWorld {
     fn create_temp_test_dir(&mut self) {
         let path = PathBuf::from("./tmp/test_scenarios");
-        let temp_test_dir = create_dir_all(&path)
-            .expect(format!("failed to create dir '{}'", path.display()).as_str());
+        create_dir_all(&path).expect(format!("failed to create dir '{}'", path.display()).as_str());
         self.temp_test_dir = Some(path);
     }
 
     fn run_and_capture_stdout(&mut self, args: Vec<&str>) {
-        let cargo_path = which("cargo")
-            .expect("failed to find `cargo` in path");
+        let cargo_path = which("cargo").expect("failed to find `cargo` in path");
 
         let output = Command::new(cargo_path)
             .arg("run")
@@ -40,8 +38,8 @@ impl MyWorld {
             .output()
             .expect("failed to execute process `cargo run`");
 
-        let stdout = String::from_utf8(output.stdout)
-            .expect("invalid utf8 in stdout of `cargo run`");
+        let stdout =
+            String::from_utf8(output.stdout).expect("invalid utf8 in stdout of `cargo run`");
 
         self.stdout_of_run = Some(stdout);
     }
@@ -54,7 +52,8 @@ mod example_steps {
     fn extract_quoted_args(matches: &[String]) -> Vec<&str> {
         let re = regex!(r"`([^`]+)`");
 
-        let caps = matches.iter()
+        let caps = matches
+            .iter()
             .skip(1)
             .flat_map(|s| re.captures_iter(s))
             .collect::<Vec<_>>();
@@ -82,20 +81,8 @@ mod example_steps {
     });
 }
 
-// Declares a before handler function named `a_before_fn`
-before!(a_before_fn => |scenario| {
-
-});
-
-// Declares an after handler function named `an_after_fn`
-after!(an_after_fn => |scenario| {
-
-});
-
 // A setup function to be called before everything else
-fn setup() {
-
-}
+fn setup() {}
 
 cucumber! {
     features: "./features", // Path to our feature files
@@ -104,10 +91,6 @@ cucumber! {
         example_steps::steps // the `steps!` macro creates a `steps` function in a module
     ],
     setup: setup, // Optional; called once before everything
-    before: &[
-        a_before_fn // Optional; called before each scenario
-    ],
-    after: &[
-        an_after_fn // Optional; called after each scenario
-    ]
+    before: &[],
+    after: &[]
 }

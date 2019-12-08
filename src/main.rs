@@ -6,7 +6,7 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::ops::Deref;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tempfile::Builder;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -22,9 +22,10 @@ struct DifferConfig {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Parse config from "example.yml"
-    let cfg: DifferConfig = serde_yaml::from_slice(fs::read_to_string("example.yml")?.as_ref())?;
-    println!("Config read from \"example.yml\":\n    {:?}\n\n", cfg);
+    // Parse config
+    let cfg_path = Path::new("example.yml");
+    let cfg: DifferConfig = serde_yaml::from_slice(fs::read_to_string(cfg_path)?.as_ref())?;
+    println!("Config read from \"{}\":\n    {:?}\n\n", cfg_path.display(), cfg);
 
     let cfg_left = cfg.left.ok_or("Missing left")?;
     let cfg_left_pks = cfg_left.primary_key.ok_or("Missing left primary key")?;

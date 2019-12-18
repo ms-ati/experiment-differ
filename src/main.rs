@@ -6,8 +6,20 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use structopt::StructOpt;
 use tempfile::Builder;
+
+#[derive(Debug, StructOpt)]
+#[structopt(
+    name = "example-differ",
+    about = "Diff structured data files using key fields, with high performance."
+)]
+struct CliOpt {
+    /// Config file
+    #[structopt(short, long, parse(from_os_str), name = "FILE", default_value = "example.yml")]
+    config: PathBuf
+}
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 struct InputConfig {
@@ -23,7 +35,8 @@ struct DifferConfig {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Parse config
-    let cfg_path = Path::new("example.yml");
+    let cli_opt: CliOpt = CliOpt::from_args();
+    let cfg_path = cli_opt.config.as_path();
     let cfg: DifferConfig = serde_yaml::from_slice(fs::read_to_string(cfg_path)?.as_ref())?;
     println!("Config read from \"{}\":\n    {:?}\n\n", cfg_path.display(), cfg);
 

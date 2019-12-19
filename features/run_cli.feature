@@ -1,10 +1,22 @@
 # Actually run the CLI (command-line interface) for integration testing
-Feature: Run CLI
+Feature: Run the CLI (command line interface)
 
-  Scenario: No arguments and no config file
-    Given no config file
-    When I run the CLI with no args
-    Then the stderr should contain:
-      """
-      Error: Os { code: 2, kind: NotFound, message: "No such file or directory" }
-      """
+  Rule: Show usage when missing configuration
+
+    Scenario: No config file and no arguments
+      Given no config file
+      When I run the CLI with no args
+      Then the stdout should contain:
+        """
+        Diff structured data files using key fields, with high performance.
+
+        USAGE:
+            experiment-differ [OPTIONS]
+
+        FLAGS:
+            -h, --help       Prints help information
+            -V, --version    Prints version information
+
+        OPTIONS:
+            -c, --config <FILE>    Config file [default: example.yml]
+        """

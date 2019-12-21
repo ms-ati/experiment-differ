@@ -11,10 +11,10 @@ use structopt::StructOpt;
 use tempfile::Builder;
 
 #[derive(Debug, StructOpt)]
-#[structopt(
-    name = "example-differ",
-    about = "Diff structured data files using key fields, with high performance."
-)]
+#[structopt(name = "example-differ")]
+/// Diff structured data files using key fields with high performance.
+///
+/// TODO: Add additional intro paragraph for the --help output here!
 struct CliOpt {
     /// Config file
     #[structopt(short, long, parse(from_os_str), name = "FILE", default_value = "example.yml")]
@@ -37,6 +37,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Parse config
     let cli_opt: CliOpt = CliOpt::from_args();
     let cfg_path = cli_opt.config.as_path();
+    if !cfg_path.exists() {
+        if cfg_path.as_os_str() == "example.yml" {
+            CliOpt::clap().print_help()?;
+            println!();
+            return Ok(());
+        }
+        else {
+            return Err(format!("Config file not found: {}", cfg_path.display()).into());
+        }
+    }
     let cfg: DifferConfig = serde_yaml::from_slice(fs::read_to_string(cfg_path)?.as_ref())?;
     println!("Config read from \"{}\":\n    {:?}\n\n", cfg_path.display(), cfg);
 

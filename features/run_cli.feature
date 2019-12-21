@@ -1,4 +1,3 @@
-# Actually run the CLI (command-line interface) for integration testing
 Feature: Run the CLI (command line interface)
 
   Rule: Show usage when missing configuration
@@ -8,10 +7,13 @@ Feature: Run the CLI (command line interface)
       When I run the CLI with no args
       Then the stdout should contain:
         """
-        Diff structured data files using key fields, with high performance.
+        example-differ 0.1.0
+        Diff structured data files using key fields with high performance.
+
+        TODO: Add additional intro paragraph for the --help output here!
 
         USAGE:
-            experiment-differ [OPTIONS]
+            example-differ [OPTIONS]
 
         FLAGS:
             -h, --help       Prints help information

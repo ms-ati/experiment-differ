@@ -90,13 +90,13 @@ mod example_steps {
         then "the stdout should contain:" |world, step| {
             let stdout = world.stdout_of_run.as_ref().expect("Step missing stdout of run");
             let expected = expect_docstring(step);
-            assert!(stdout.contains(expected), "stdout: `{:#?}`", stdout);
+            assert!(stdout.contains(expected), "[stdout]\n{}\n[expected]\n{}", stdout, expected);
         };
 
         then "the stderr should contain:" |world, step| {
             let stderr = world.stderr_of_run.as_ref().expect("Step missing stderr of run");
             let expected = expect_docstring(step);
-            assert!(stderr.contains(expected), "stderr: `{:#?}`", stderr);
+            assert!(stderr.contains(expected), "[stderr]\n{}\n[expected]\n{}", stderr, expected);
         };
     });
 }

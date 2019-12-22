@@ -11,7 +11,7 @@ use structopt::StructOpt;
 use tempfile::Builder;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "example-differ")]
+#[structopt(name = "experiment-differ")]
 /// Diff structured data files using key fields with high performance.
 ///
 /// TODO: Add additional intro paragraph for the --help output here!

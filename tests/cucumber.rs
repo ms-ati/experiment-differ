@@ -65,11 +65,12 @@ impl MyWorld {
             .expect(format!("failed to write to file '{}'", file_path.display()).as_str());
     }
 
-    fn run_and_capture_stdout(&mut self, args: Vec<&str>) {
+    fn run_and_capture(&mut self, args: Vec<&str>) {
         let cargo_path = which("cargo").expect("failed to find `cargo` in path");
 
         let output = Command::new(cargo_path)
             .arg("run")
+            .arg("--")
             .args(args)
             .current_dir(self.temp_test_dir.as_ref().unwrap_or(&PathBuf::from(".")))
             .output()
@@ -85,24 +86,6 @@ impl MyWorld {
 mod example_steps {
     use cucumber::steps;
     use cucumber::Step;
-    use once_cell_regex::regex;
-
-    fn extract_quoted_args(matches: &[String]) -> Vec<&str> {
-        let re = regex!(r"`([^`]+)`");
-
-        let caps = matches
-            .iter()
-            .skip(1)
-            .flat_map(|s| re.captures_iter(s))
-            .collect::<Vec<_>>();
-
-        caps.iter()
-            .skip(1)
-            .flat_map(|c| c.iter().skip(1))
-            .flatten()
-            .map(|m| m.as_str())
-            .collect::<Vec<_>>()
-    }
 
     fn expect_docstring(step: &Step) -> &String {
         step.docstring()
@@ -118,15 +101,18 @@ mod example_steps {
             world.create_temp_test_dir(step.to_string());
         };
 
-        given regex r"^an (invalid )?config file named `([^`]+)` with content:$" |world, matches, step| {
+        given regex r"^a(n invalid)? config file named `([^`]+)` with content:$" (String, String) |world, _invalid, filename, step| {
             world.create_temp_test_dir(step.to_string());
-            let filename = &matches.last().expect("Missing config file in step");
             let content = expect_docstring(step);
-            world.create_file_in_test_dir(filename, content);
+            world.create_file_in_test_dir(&filename, content);
         };
 
-        when regex r"^I run the CLI with ((no args)|(`[^`]+`)+)$" |world, matches, _step| {
-            world.run_and_capture_stdout(extract_quoted_args(matches));
+        when "I run the CLI with no args" |world, _step| {
+            world.run_and_capture([].to_vec());
+        };
+
+        when regex r"^I run the CLI with `([^`]+)`$" (String) |world, all_args, _step| {
+            world.run_and_capture(all_args.split_whitespace().collect::<Vec<&str>>());
         };
 
         then "the stdout should contain:" |world, step| {

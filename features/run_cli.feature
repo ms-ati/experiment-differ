@@ -34,3 +34,14 @@ Feature: Run the CLI (command line interface)
         """
         Error: "Failed to parse example.yml: EOF while parsing a value"
         """
+
+    Scenario: Invalid non-default config file
+      Given an invalid config file named `non-default.yml` with content:
+        """
+        Invalid YAML
+        """
+      When I run the CLI with `-c non-default.yml`
+      Then the stderr should contain:
+        """
+        Error: "Failed to parse non-default.yml: invalid type: string \"Invalid YAML\", expected struct DifferConfig at line 1 column 1"
+        """

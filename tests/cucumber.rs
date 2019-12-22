@@ -1,5 +1,8 @@
 use cucumber::cucumber;
-use std::fs::create_dir_all;
+use once_cell_regex::regex;
+use std::fs::File;
+use std::fs::{create_dir_all, remove_dir_all};
+use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 use which::which;
@@ -23,11 +26,43 @@ impl std::default::Default for MyWorld {
     }
 }
 
+impl Drop for MyWorld {
+    fn drop(&mut self) {
+        if let Some(temp_path) = self.temp_test_dir.as_ref() {
+            // NOTE: Comment me out to retain temp test dir for investigation
+            remove_dir_all(temp_path).unwrap();
+        }
+    }
+}
+
 impl MyWorld {
-    fn create_temp_test_dir(&mut self) {
-        let path = PathBuf::from("./tmp/test_scenarios");
+    fn create_temp_test_dir(&mut self, step_string: String) {
+        let re_non_words = regex!(r"\W");
+
+        let step_cleaned: String = re_non_words
+            .replace_all(step_string.to_lowercase().as_str(), "-")
+            .into();
+
+        let path = PathBuf::from("./tmp/test_scenarios").join(step_cleaned);
         create_dir_all(&path).expect(format!("failed to create dir '{}'", path.display()).as_str());
         self.temp_test_dir = Some(path);
+    }
+
+    fn create_file_in_test_dir(&mut self, filename: &String, content: &String) {
+        let dir_path = self
+            .temp_test_dir
+            .as_ref()
+            .expect("no temp test dir available in step")
+            .as_path();
+
+        let file_path_buf = dir_path.join(filename);
+        let file_path = file_path_buf.as_path();
+
+        let mut file = File::create(file_path)
+            .expect(format!("failed to create file '{}'", file_path.display()).as_str());
+
+        file.write_all(content.as_bytes())
+            .expect(format!("failed to write to file '{}'", file_path.display()).as_str());
     }
 
     fn run_and_capture_stdout(&mut self, args: Vec<&str>) {
@@ -79,8 +114,15 @@ mod example_steps {
         //
         // Run CLI steps
         //
-        given "no config file" |world, _step| {
-            world.create_temp_test_dir();
+        given "no config file" |world, step| {
+            world.create_temp_test_dir(step.to_string());
+        };
+
+        given regex r"^an (invalid )?config file named `([^`]+)` with content:$" |world, matches, step| {
+            world.create_temp_test_dir(step.to_string());
+            let filename = &matches.last().expect("Missing config file in step");
+            let content = expect_docstring(step);
+            world.create_file_in_test_dir(filename, content);
         };
 
         when regex r"^I run the CLI with ((no args)|(`[^`]+`)+)$" |world, matches, _step| {

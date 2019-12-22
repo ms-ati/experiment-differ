@@ -22,3 +22,15 @@ Feature: Run the CLI (command line interface)
         OPTIONS:
             -c, --config <FILE>    Config file [default: example.yml]
         """
+
+  Rule: Print error when invalid configuration
+
+    Scenario: Empty default config file
+      Given an invalid config file named `example.yml` with content:
+        """
+        """
+      When I run the CLI with no args
+      Then the stderr should contain:
+        """
+        Error: "Failed to parse example.yml: EOF while parsing a value"
+        """

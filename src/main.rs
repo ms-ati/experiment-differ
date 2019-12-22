@@ -17,8 +17,14 @@ use tempfile::Builder;
 /// TODO: Add additional intro paragraph for the --help output here!
 struct CliOpt {
     /// Config file
-    #[structopt(short, long, parse(from_os_str), name = "FILE", default_value = "example.yml")]
-    config: PathBuf
+    #[structopt(
+        short,
+        long,
+        parse(from_os_str),
+        name = "FILE",
+        default_value = "example.yml"
+    )]
+    config: PathBuf,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -34,7 +40,7 @@ struct DifferConfig {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Parse config
+    // Parse config file from command-line option or default
     let cli_opt: CliOpt = CliOpt::from_args();
     let cfg_path = cli_opt.config.as_path();
     if !cfg_path.exists() {
@@ -42,13 +48,28 @@ fn main() -> Result<(), Box<dyn Error>> {
             CliOpt::clap().print_help()?;
             println!();
             return Ok(());
-        }
-        else {
+        } else {
             return Err(format!("Config file not found: {}", cfg_path.display()).into());
         }
     }
-    let cfg: DifferConfig = serde_yaml::from_slice(fs::read_to_string(cfg_path)?.as_ref())?;
-    println!("Config read from \"{}\":\n    {:?}\n\n", cfg_path.display(), cfg);
+    let cfg_yaml: Result<String, Box<dyn Error>> = fs::read_to_string(cfg_path)
+        .map_err(|e| format!("Failed to read config file {}: {}", cfg_path.display(), e).into());
+    let cfg_result = serde_yaml::from_slice::<DifferConfig>(cfg_yaml?.as_ref());
+    let cfg_error: Result<DifferConfig, Box<dyn Error>> = cfg_result.map_err(|e| {
+        format!(
+            "Failed to parse {}: {}",
+            cfg_path.display(),
+            e
+        )
+        .into()
+    });
+    let cfg = cfg_error?;
+
+    println!(
+        "Config read from \"{}\":\n    {:?}\n\n",
+        cfg_path.display(),
+        cfg
+    );
 
     let cfg_left = cfg.left.ok_or("Missing left")?;
     let cfg_left_pks = cfg_left.primary_key.ok_or("Missing left primary key")?;

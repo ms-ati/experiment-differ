@@ -55,14 +55,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cfg_yaml: Result<String, Box<dyn Error>> = fs::read_to_string(cfg_path)
         .map_err(|e| format!("Failed to read config file {}: {}", cfg_path.display(), e).into());
     let cfg_result = serde_yaml::from_slice::<DifferConfig>(cfg_yaml?.as_ref());
-    let cfg_error: Result<DifferConfig, Box<dyn Error>> = cfg_result.map_err(|e| {
-        format!(
-            "Failed to parse {}: {}",
-            cfg_path.display(),
-            e
-        )
-        .into()
-    });
+    let cfg_error: Result<DifferConfig, Box<dyn Error>> =
+        cfg_result.map_err(|e| format!("Failed to parse {}: {}", cfg_path.display(), e).into());
     let cfg = cfg_error?;
 
     println!(

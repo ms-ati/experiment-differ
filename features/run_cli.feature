@@ -1,5 +1,29 @@
 Feature: Run the CLI (command line interface)
 
+  Rule: Transcode a single input file
+
+    Scenario: Transcode a JSONL file to CSV on STDOUT
+      Given a config file named `example.yml` containing:
+        """
+        transcode:
+          input:
+            path: input.jsonl
+          output:
+            format: csv
+        """
+      And a file named `input.jsonl` containing:
+        """
+        {"a":1,"b":"one"}
+        {"a":2,"b":"two"}
+        """
+      When I run the CLI with no args
+      Then the stdout should contain:
+         """
+         a,b
+         1,one
+         2,two
+         """
+
   Rule: Show usage when missing configuration
 
     Scenario: No config file and no arguments

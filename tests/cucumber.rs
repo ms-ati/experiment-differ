@@ -106,7 +106,7 @@ mod example_steps {
             world.create_file_in_test_dir(&filename, &String::new());
         };
 
-        given regex r"^a(n invalid)? config file named `([^`]+)` containing:$" (String, String) |world, _invalid, filename, step| {
+        given regex r"^a(n invalid)?( config)? file named `([^`]+)` containing:$" (String, String, String) |world, _invalid, _config, filename, step| {
             world.create_temp_test_dir(step.to_string());
             let content = expect_docstring(step);
             world.create_file_in_test_dir(&filename, content);

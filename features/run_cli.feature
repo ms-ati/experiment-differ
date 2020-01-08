@@ -26,9 +26,7 @@ Feature: Run the CLI (command line interface)
   Rule: Print error when invalid configuration
 
     Scenario: Empty default config file
-      Given an invalid config file named `example.yml` with content:
-        """
-        """
+      Given an empty config file named `example.yml`
       When I run the CLI with no args
       Then the stderr should contain:
         """
@@ -36,7 +34,7 @@ Feature: Run the CLI (command line interface)
         """
 
     Scenario: Invalid non-default config file
-      Given an invalid config file named `non-default.yml` with content:
+      Given an invalid config file named `non-default.yml` containing:
         """
         Invalid YAML
         """

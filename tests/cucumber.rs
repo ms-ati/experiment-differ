@@ -101,7 +101,12 @@ mod example_steps {
             world.create_temp_test_dir(step.to_string());
         };
 
-        given regex r"^a(n invalid)? config file named `([^`]+)` with content:$" (String, String) |world, _invalid, filename, step| {
+        given regex r"^an empty config file named `([^`]+)`" (String) |world, filename, step| {
+            world.create_temp_test_dir(step.to_string());
+            world.create_file_in_test_dir(&filename, &String::new());
+        };
+
+        given regex r"^a(n invalid)? config file named `([^`]+)` containing:$" (String, String) |world, _invalid, filename, step| {
             world.create_temp_test_dir(step.to_string());
             let content = expect_docstring(step);
             world.create_file_in_test_dir(&filename, content);

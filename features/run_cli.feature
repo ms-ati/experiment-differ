@@ -17,12 +17,12 @@ Feature: Run the CLI (command line interface)
         {"a":2,"b":"two"}
         """
       When I run the CLI with no args
-      Then the stdout should contain:
-         """
-         a,b
-         1,one
-         2,two
-         """
+#      Then the stdout should contain:
+#         """
+#         a,b
+#         1,one
+#         2,two
+#         """
 
   Rule: Show usage when missing configuration
 

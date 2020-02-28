@@ -37,15 +37,18 @@ impl Drop for MyWorld {
 
 impl MyWorld {
     fn create_temp_test_dir(&mut self, step_string: String) {
-        let re_non_words = regex!(r"\W");
+        if self.temp_test_dir.is_none() {
+            let re_non_words = regex!(r"\W");
 
-        let step_cleaned: String = re_non_words
-            .replace_all(step_string.to_lowercase().as_str(), "-")
-            .into();
+            let step_cleaned: String = re_non_words
+                .replace_all(step_string.to_lowercase().as_str(), "-")
+                .into();
 
-        let path = PathBuf::from("./tmp/test_scenarios").join(step_cleaned);
-        create_dir_all(&path).expect(format!("failed to create dir '{}'", path.display()).as_str());
-        self.temp_test_dir = Some(path);
+            let path = PathBuf::from("./tmp/test_scenarios").join(step_cleaned);
+            create_dir_all(&path)
+                .expect(format!("failed to create dir '{}'", path.display()).as_str());
+            self.temp_test_dir = Some(path);
+        }
     }
 
     fn create_file_in_test_dir(&mut self, filename: &String, content: &String) {

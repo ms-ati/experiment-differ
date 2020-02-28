@@ -11,7 +11,7 @@ Feature: Run the CLI (command line interface)
           output:
             format: csv
         """
-      And a file named `input.jsonl` containing:
+      And an input file named `input.jsonl` containing:
         """
         {"a":1,"b":"one"}
         {"a":2,"b":"two"}

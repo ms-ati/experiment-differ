@@ -16,13 +16,7 @@ use validator_derive::*;
 #[structopt(name = "experiment-differ")]
 pub struct UnvalidatedCLIOptions {
     /// Config file
-    #[structopt(
-        short,
-        long,
-        parse(from_os_str),
-        name = "FILE",
-        default_value = "example.yml"
-    )]
+    #[structopt(parse(from_os_str), name = "FILE", default_value = "example.yml")]
     #[validate(custom = "validate_readable_filename")]
     config: PathBuf,
 }

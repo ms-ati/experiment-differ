@@ -79,8 +79,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 s.to_owned()
             }
         })
-        .map(|s| jmespath::compile(s.as_str()).unwrap())
-        .collect::<Vec<jmespath::Expression>>();
+        .map(|s| jmespatch::compile(s.as_str()).unwrap())
+        .collect::<Vec<jmespatch::Expression>>();
 
     // Lazily parse jsonl values from memory mapped file (fastest way)
     let file = File::open(cfg_left.path)?;

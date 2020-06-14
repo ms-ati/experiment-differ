@@ -73,6 +73,8 @@ impl MyWorld {
 
         let output = Command::new(cargo_path)
             .arg("run")
+            .arg("--bin")
+            .arg("experiment-differ")
             .arg("--")
             .args(args)
             .current_dir(self.temp_test_dir.as_ref().unwrap_or(&PathBuf::from(".")))

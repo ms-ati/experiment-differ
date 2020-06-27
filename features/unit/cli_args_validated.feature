@@ -1,3 +1,7 @@
 Feature: CLI Args Validated
 
-  Rule:
+  Rule: Foo
+
+    Scenario: Foo
+      Given foo
+      Then bar

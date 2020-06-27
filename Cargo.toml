@@ -20,8 +20,16 @@ tempfile = "~3.1.0"
 validator = "~0.10"
 validator_derive = "~0.10"
 
+# To run in isolation: cargo test --test cucumber-end_to_end
 [[test]]
-name = "cucumber"
+name = "cucumber-end_to_end"
+path = "tests/cucumber/end_to_end_steps.rs"
+harness = false # Allows Cucumber to print output instead of libtest
+
+# To run in isolation: cargo test --test cucumber-unit
+[[test]]
+name = "cucumber-unit"
+path = "tests/cucumber/unit_steps.rs"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]

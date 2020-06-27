@@ -140,7 +140,7 @@ mod example_steps {
 }
 
 cucumber! {
-    features: "./features", // Path to our feature files
+    features: "./features/end_to_end", // Path to our feature files
     world: crate::MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
         example_steps::steps // the `steps!` macro creates a `steps` function in a module

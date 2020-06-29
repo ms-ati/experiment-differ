@@ -1,4 +1,4 @@
-Feature: Run the CLI (command line interface)
+Feature: [end_to_end] Run the CLI
 
   Rule: Transcode a single input file
 

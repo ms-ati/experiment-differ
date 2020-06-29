@@ -1,5 +1,5 @@
-use structopt::StructOpt;
 use super::ReadableFilename;
+use structopt::StructOpt;
 
 //
 // NOTE: The following doc comments on the `Args` struct are parsed by the `StructOpt`
@@ -22,6 +22,3 @@ pub struct Args {
     )]
     file: ReadableFilename,
 }
-
-
-
